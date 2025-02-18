@@ -1,0 +1,7 @@
+Flask
+faiss-cpu
+numpy
+matplotlib
+sentence-transformers
+scikit-learn
+groq

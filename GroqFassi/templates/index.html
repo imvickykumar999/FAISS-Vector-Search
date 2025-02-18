@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Similarity Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: flex;
+            width: 80%;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .left-panel {
+            width: 45%;
+        }
+        .right-panel {
+            width: 50%;
+            text-align: center;
+        }
+        textarea {
+            width: 100%;
+            height: 400px;
+            font-size: 16px;
+            padding: 10px;
+        }
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Enter a Question</h1>
+    <form method="post">
+        <input type="text" name="question" required>
+        <button type="submit">Submit</button>
+    </form>
+
+    <div class="container">
+        <div class="left-panel">
+            {% if correct_answer %}
+                <h2>Question:</h2>
+                <p>{{ request.form['question'] }}</p>
+
+                <h2>Correct Answer:</h2>
+                <textarea readonly>{{ correct_answer }}</textarea>
+            {% endif %}
+        </div>
+
+        <div class="right-panel">
+            {% if graph_url %}
+                <h2>3D Visualization</h2>
+                <img src="{{ graph_url }}" alt="3D Graph">
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
