@@ -132,7 +132,8 @@ def index():
         question = request.form['question']
         correct_answer, graph_url = generate_graph(question, default_options)
         
-        correct_answer = generate_reply(f'{question} \n {correct_answer}')
+        prompt = f'{question} \n Write in 50 words short reply based on\n {correct_answer}'
+        correct_answer = generate_reply(prompt)
     return render_template('index.html', correct_answer=correct_answer, graph_url=graph_url)
 
 if __name__ == '__main__':
