@@ -3,126 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Question Similarity Visualization</title>
+    <title>Groq & FAISS Vector Search</title>
+    <!-- Load Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Custom styles for better readability and centering */
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #fff;
-            color: #000;
-            margin: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
         }
-        
-        h1, h2 {
-            color: #000;
-            text-transform: uppercase;
-            text-align: center;
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #10B981;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+            display: none;
         }
-        
-        .container {
-            display: flex;
-            width: 80%;
-            justify-content: space-between;
-            align-items: flex-start;
-            background: rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            flex-wrap: wrap;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
-        
-        .left-panel, .right-panel {
-            padding: 20px;
-            width: 100%;
-        }
-        
-        .left-panel {
-            width: 100%;
-        }
-        
-        .right-panel {
-            width: 100%;
-            text-align: center;
-        }
-        
-        textarea {
-            width: 100%;
-            height: 350px;
-            font-size: 16px;
-            padding: 10px;
-            background: #f9f9f9;
-            color: #000;
-            border: 1px solid #000;
-            border-radius: 5px;
-        }
-        
-        input, button {
-            padding: 10px;
-            font-size: 16px;
-            margin-top: 10px;
-            background: #f9f9f9;
-            color: #000;
-            border: 1px solid #000;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        
-        button:hover, input:hover {
-            background: #000;
-            color: #fff;
-        }
-        
-        img {
-            max-width: 100%;
-            height: auto;
-            border: 2px solid #000;
-            border-radius: 10px;
-        }
-        
-        .center-text {
-            text-align: center;
-        }
-
-        @media (min-width: 768px) {
-            .container {
-                flex-wrap: nowrap;
-            }
-            .left-panel {
-                width: 45%;
-            }
-            .right-panel {
-                width: 50%;
-            }
-        }        
     </style>
 </head>
-<body>
-    <h1>Enter a Question</h1>
-    <form method="post">
-        <input type="text" name="question" required>
-        <button type="submit">Submit</button>
-    </form>
-    <br>
-    <div class="container">
-        <div class="left-panel">
-            {% if correct_answer %}
-                <h2>Question:</h2>
-                <p class="center-text">{{ request.form['question'] }}</p>
-                <br>
-                <h2>Answer:</h2>
-                <textarea readonly>{{ correct_answer }}</textarea>
-            {% endif %}
+<body class="bg-gray-50 flex flex-col items-center p-8">
+
+    <div class="max-w-4xl w-full">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-8 text-center tracking-tight">
+            Vector Search & AI RAG Demo
+        </h1>
+
+        <!-- Input Form -->
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <label for="question-input" class="block text-sm font-medium text-gray-700 mb-2">
+                Enter your question:
+            </label>
+            <div class="flex space-x-3">
+                <input type="text" id="question-input" class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm" placeholder="e.g., Why do earthquakes occur in Delhi?" required>
+                <button id="submit-button" class="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out">
+                    Submit
+                    <div id="loading-spinner" class="loading-spinner"></div>
+                </button>
+            </div>
         </div>
 
-        <div class="right-panel">
-            {% if graph_url %}
-                <h2>3D Visualization</h2>
-                <img src="{{ graph_url }}" alt="3D Graph">
-            {% endif %}
+        <!-- Results Container -->
+        <div id="results-container" class="hidden">
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Left Panel: Question and Answer -->
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">RAG Response</h2>
+                    <div class="mb-4">
+                        <h3 class="font-semibold text-gray-700 mb-1">Question:</h3>
+                        <p id="display-question" class="text-gray-900 italic"></p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h3 class="font-semibold text-gray-700 mb-1">Groq Answer:</h3>
+                        <textarea id="answer-output" readonly rows="10" class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:outline-none"></textarea>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Visualization -->
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 flex flex-col items-center">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">3D Visualization</h2>
+                    <img id="graph-image" src="" alt="3D Visualization of Embeddings" class="w-full h-auto rounded-lg border border-gray-300">
+                    <p class="text-sm text-gray-500 mt-2">
+                        Red Diamond (Q) = Question, Green Line = Best Match, Blue Dot (O) = Document Option.
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
+
+    <script>
+        const input = document.getElementById('question-input');
+        const button = document.getElementById('submit-button');
+        const spinner = document.getElementById('loading-spinner');
+        const resultsContainer = document.getElementById('results-container');
+        const displayQuestion = document.getElementById('display-question');
+        const answerOutput = document.getElementById('answer-output');
+        const graphImage = document.getElementById('graph-image');
+
+        // Function to handle the API call
+        async function fetchAnswer() {
+            const question = input.value.trim();
+            if (!question) return;
+
+            // 1. Show loading state
+            button.disabled = true;
+            spinner.style.display = 'inline-block';
+            answerOutput.value = 'Searching for best match and generating AI response...';
+            resultsContainer.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ question: question })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // 2. Update UI with successful data
+                    displayQuestion.textContent = data.question;
+                    answerOutput.value = data.answer;
+                    graphImage.src = data.graph_url + '?' + new Date().getTime(); // Append timestamp to bust cache
+                    resultsContainer.classList.remove('hidden');
+                } else {
+                    // 3. Handle API error responses
+                    answerOutput.value = `Error: ${data.error || 'Server failed to process request.'}`;
+                    graphImage.src = '';
+                }
+
+            } catch (error) {
+                // 4. Handle network or parsing errors
+                console.error('Fetch Error:', error);
+                answerOutput.value = 'A network error occurred. Please check your console.';
+            } finally {
+                // 5. Hide loading state
+                button.disabled = false;
+                spinner.style.display = 'none';
+            }
+        }
+
+        // Event listener for the button click
+        button.addEventListener('click', fetchAnswer);
+        
+        // Allow pressing Enter key in the input field
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent default form submission
+                fetchAnswer();
+            }
+        });
+
+    </script>
 </body>
 </html>
