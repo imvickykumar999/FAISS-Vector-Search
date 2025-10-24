@@ -12,4 +12,4 @@ O4: A football team has 11 players. → Distance: 0.9206
 O5: Hockey teams have 6 players on the ice. → Distance: 1.0328
 ```
 
-![image](https://github.com/user-attachments/assets/8c8c480e-80fc-4a16-a3d1-8feec6eee742)
+![image](https://github.com/user-attachments/assets/ed3473b5-9fb7-46ad-b7c8-4e20a3b6e3a1)
